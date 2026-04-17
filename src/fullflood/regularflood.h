@@ -1,0 +1,4 @@
+#ifndef REGULARFLOOD_H
+#define REGULARFLOOD_H
+
+#endif // REGULARFLOOD_H
