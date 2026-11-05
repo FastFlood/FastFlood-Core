@@ -1,13 +1,23 @@
-#ifndef OSS_FLOWWIDTH_H
-#define OSS_FLOWWIDTH_H
-
-#include "map.h"
 
 inline std::vector<cTMapf *> GetFlowWidthDirectionFromRiverVolume(cTMapf * DEM,cTMapf * h, int iters)
 {
 
     cTMapf * DEMAVI = DEM->GetCopy();
     cTMapf * DEMAVI2 = DEM->GetCopy();
+    //cTMapf * WHAVI = DEM->GetCopy0();
+    /*cTMapf * SlopeX1I = DEM->GetCopy0();
+    cTMapf * SlopeX1IP = DEM->GetCopy0();
+    cTMapf * SlopeX2I = DEM->GetCopy0();
+    cTMapf * SlopeX2IP = DEM->GetCopy0();
+    cTMapf * SlopeY1I = DEM->GetCopy0();
+    cTMapf * SlopeY1IP = DEM->GetCopy0();
+    cTMapf * SlopeY2I = DEM->GetCopy0();
+    cTMapf * SlopeY2IP = DEM->GetCopy0();
+
+    cTMapf * VMAXX1I = DEM->GetCopy0();
+    cTMapf * VMAXX2I = DEM->GetCopy0();
+    cTMapf * VMAXY1I = DEM->GetCopy0();
+    cTMapf * VMAXY2I = DEM->GetCopy0();*/
     cTMapf * WidthI = DEM->GetCopy0();
     cTMapf * vol_leftI = h->GetCopy();
 
@@ -144,6 +154,9 @@ inline std::vector<cTMapf *> GetFlowWidthDirectionFromRiverVolume(cTMapf * DEM,c
                     float zl = z + dxi * sl;
                     float zr = z + dxi * sr;
 
+                    //did we already meet a volume larger then ours there?
+
+                    //redistribute the volume and see if we have left-over
                     if( i == 0)
                     {
 
@@ -156,6 +169,11 @@ inline std::vector<cTMapf *> GetFlowWidthDirectionFromRiverVolume(cTMapf * DEM,c
                         WidthI->data[r][c] = std::min(dxi * 3.0f,width);
 
                         float volh = WidthI->data[r][c] *  0.5*WidthI->data[r][c] * 0.5 * s;
+
+                        //if(vol_leftI->data[r][c] > 1.0)
+                        //{
+                        //    FF::cout << "iter first " <<  i << " " << s << " " << z << " " << width << " " <<  dxi << " " << std::min(dxi * 3.0f,width) << " " << vol_leftI->data[r][c] << "  " << volh <<  std::endl;
+                        //}
 
                         DIRX->data[r][c] += volh * ux;
                         DIRY->data[r][c] += volh * uy;
@@ -172,11 +190,15 @@ inline std::vector<cTMapf *> GetFlowWidthDirectionFromRiverVolume(cTMapf * DEM,c
 
                         WidthI->data[r][c] = std::min(dxi * 3.0f,width);
                         float volh = (WidthI->data[r][c]-dxi) *s *0.5* (WidthI->data[r][c]-dxi) *0.5 + dxi * (s*0.5*((WidthI->data[r][c]-dxi) ));
+                        //FF::cout << "iter after " <<  i << " " << s << " " << z << " " << width << " " << widtho << " " <<  dxi << " " << std::min(dxi * 3.0f,width) << " " << vol_leftI->data[r][c] << "  " << volh <<  std::endl;
+
 
                         DIRX->data[r][c] += volh * ux;
                         DIRY->data[r][c] += volh * uy;
                         DIRW->data[r][c] += volh;
 
+
+                        //(x - dx)*(s*0.5*(x - dx))*0.5  + dx *(s*0.5*(x - dx))
                         vol_leftI->data[r][c] = std::max(0.0f,vol_leftI->data[r][c] - volh);
 
                     }
@@ -211,6 +233,20 @@ inline std::vector<cTMapf *> GetFlowWidthDirectionFromRiverVolume(cTMapf * DEM,c
 
     delete DEMAVI;
     delete DEMAVI2;
+    /*delete WHAVI;
+    delete SlopeX1I;
+    delete SlopeX1IP;
+    delete SlopeX2I;
+    delete SlopeX2IP;
+    delete SlopeY1I;
+    delete SlopeY1IP;
+    delete SlopeY2I;
+    delete SlopeY2IP;
+
+    delete VMAXX1I;
+    delete VMAXX2I;
+    delete VMAXY1I;
+    delete VMAXY2I;*/
     delete vol_leftI;
 
 
@@ -223,6 +259,20 @@ inline cTMapf * GetFlowWidthFromRiverVolume(cTMapf * DEM,cTMapf * h, int iters)
 
     cTMapf * DEMAVI = DEM->GetCopy();
     cTMapf * DEMAVI2 = DEM->GetCopy();
+    //cTMapf * WHAVI = DEM->GetCopy0();
+    /*cTMapf * SlopeX1I = DEM->GetCopy0();
+    cTMapf * SlopeX1IP = DEM->GetCopy0();
+    cTMapf * SlopeX2I = DEM->GetCopy0();
+    cTMapf * SlopeX2IP = DEM->GetCopy0();
+    cTMapf * SlopeY1I = DEM->GetCopy0();
+    cTMapf * SlopeY1IP = DEM->GetCopy0();
+    cTMapf * SlopeY2I = DEM->GetCopy0();
+    cTMapf * SlopeY2IP = DEM->GetCopy0();
+
+    cTMapf * VMAXX1I = DEM->GetCopy0();
+    cTMapf * VMAXX2I = DEM->GetCopy0();
+    cTMapf * VMAXY1I = DEM->GetCopy0();
+    cTMapf * VMAXY2I = DEM->GetCopy0();*/
     cTMapf * WidthI = DEM->GetCopy0();
     cTMapf * vol_leftI = h->GetCopy();
 
@@ -355,6 +405,9 @@ inline cTMapf * GetFlowWidthFromRiverVolume(cTMapf * DEM,cTMapf * h, int iters)
                     float zl = z + dxi * sl;
                     float zr = z + dxi * sr;
 
+                    //did we already meet a volume larger then ours there?
+
+                    //redistribute the volume and see if we have left-over
                     if( i == 0)
                     {
 
@@ -368,6 +421,11 @@ inline cTMapf * GetFlowWidthFromRiverVolume(cTMapf * DEM,cTMapf * h, int iters)
 
                         float volh = WidthI->data[r][c] *  0.5*WidthI->data[r][c] * 0.5 * s;
 
+                        //if(vol_leftI->data[r][c] > 1.0)
+                        //{
+                        //    FF::cout << "iter first " <<  i << " " << s << " " << z << " " << width << " " <<  dxi << " " << std::min(dxi * 3.0f,width) << " " << vol_leftI->data[r][c] << "  " << volh <<  std::endl;
+                        //}
+
                         vol_leftI->data[r][c] = std::max(0.0f,vol_leftI->data[r][c] - volh);
                     }else
                     {
@@ -379,6 +437,9 @@ inline cTMapf * GetFlowWidthFromRiverVolume(cTMapf * DEM,cTMapf * h, int iters)
 
                         WidthI->data[r][c] = std::min(dxi * 3.0f,width);
                         float volh = (WidthI->data[r][c]-dxi) *s *0.5* (WidthI->data[r][c]-dxi) *0.5 + dxi * (s*0.5*((WidthI->data[r][c]-dxi) ));
+                        //FF::cout << "iter after " <<  i << " " << s << " " << z << " " << width << " " << widtho << " " <<  dxi << " " << std::min(dxi * 3.0f,width) << " " << vol_leftI->data[r][c] << "  " << volh <<  std::endl;
+
+                        //(x - dx)*(s*0.5*(x - dx))*0.5  + dx *(s*0.5*(x - dx))
                         vol_leftI->data[r][c] = std::max(0.0f,vol_leftI->data[r][c] - volh);
 
                     }
@@ -398,6 +459,20 @@ inline cTMapf * GetFlowWidthFromRiverVolume(cTMapf * DEM,cTMapf * h, int iters)
 
     delete DEMAVI;
     delete DEMAVI2;
+    /*delete WHAVI;
+    delete SlopeX1I;
+    delete SlopeX1IP;
+    delete SlopeX2I;
+    delete SlopeX2IP;
+    delete SlopeY1I;
+    delete SlopeY1IP;
+    delete SlopeY2I;
+    delete SlopeY2IP;
+
+    delete VMAXX1I;
+    delete VMAXX2I;
+    delete VMAXY1I;
+    delete VMAXY2I;*/
     delete vol_leftI;
 
 
@@ -532,7 +607,7 @@ inline void GetAvSoilPropsFromRiverVolume(cTMapf * DEM,cTMapf * soilp, std::vect
                         {
                             zy1 = pcr::isMV(DEMAVI->data[r-idist][c])?dem:DEMAVI->data[r-idist][c];
                             spy1 = pcr::isMV(SOILPAVI->data[r-idist][c])?sp:SOILPAVI->data[r-idist][c];
-
+                            
                         }else {
                             zy1 = dem;
                             spy1 =sp;
@@ -547,12 +622,12 @@ inline void GetAvSoilPropsFromRiverVolume(cTMapf * DEM,cTMapf * soilp, std::vect
 
                         }
                     }
+                    
 
-
-
+                    
                     if(do_area)
                     {
-
+                        
                         float sx1 =(zx1 -z)/dxi;
                         float sy1 =(zy1 -z)/dxi;
                         float sx2 =(zx2 -z)/dxi;
@@ -583,7 +658,7 @@ inline void GetAvSoilPropsFromRiverVolume(cTMapf * DEM,cTMapf * soilp, std::vect
                         float z_avg = (zl + zr + z)/3.0;
                         DEMAVI2->data[r][c] = z_avg;
                         SOILPAVI2->data[r][c] = ((spx1 + spx2 + spy1 + spy2)/2.0 + sp)/3.0;
-
+                        
                         if(i >0)
                         {
                             output_area[i]->data[r][c]  = output_area[i-1]->data[r][c] + s * dxi * dxi;
@@ -616,5 +691,3 @@ inline void GetAvSoilPropsFromRiverVolume(cTMapf * DEM,cTMapf * soilp, std::vect
 
 
 }
-
-#endif // OSS_FLOWWIDTH_H

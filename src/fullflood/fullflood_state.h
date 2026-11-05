@@ -814,7 +814,7 @@ public:
               CULVERT_CT.push_back(c_target);
 
               CULVERT_Q.push_back(culvert_q[i]);
-              FF::cout << " culvert: " << i << " " <<  culvert_q[i] << " " <<(culvert_fraction[i]/100.0f) << " locs: " << r_source << " " << c_source << "   "  << r_target << " "<<c_target <<  std::endl;
+              //FF::cout << " culvert: " << i << " " <<  culvert_q[i] << " " <<(culvert_fraction[i]/100.0f) << " locs: " << r_source << " " << c_source << "   "  << r_target << " "<<c_target <<  std::endl;
               CULVERT_FRAC.push_back(std::max(0.0f,std::min(1.0f,(culvert_fraction[i]/100.0f))));
               CULVERT_QTOT.push_back(0.0);
           }
@@ -833,7 +833,7 @@ public:
 
                       if((r == r_source && c == c_source) || (r == r_target && c == c_target))
                       {
-                          FF::cout << "added culvert to culvert ID map" << std::endl;
+                          //FF::cout << "added culvert to culvert ID map" << std::endl;
                           CULVERTID->data[r][c] = i;
                       }
                   }

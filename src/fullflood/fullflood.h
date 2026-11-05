@@ -59,7 +59,7 @@ inline FF_FULLFLOODT * InitFullFloodModel(cTMapf * dem, cTMapf * N, cTMapf * ksa
     float data_chanw = 0;
     float data_chanh = 0;
 
-    float in_dx = dem->cellSizeX();
+    float in_dx = dem->CellSizeXApproximateMeters();
 
     cTMapf *stormdraindata = nullptr;
     FF_FULLFLOODT *FULLFLOOD = new FF_FULLFLOODT();

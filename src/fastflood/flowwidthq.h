@@ -1,8 +1,7 @@
 
 //10 is seemingly sufficient as a maximum, but could potentially be less
 #define FF_QH_ITERS 10
-
-#include "map.h"
+#define MANNING_MULT_CSCPROF 2.0
 
 inline void SolveManningRectangular(float height,float s, float width, float man, float &Q, float &A_start, float &P_start, int iters = 5)
 {
@@ -22,7 +21,7 @@ inline void SolveManningRectangular(float height,float s, float width, float man
     float q_min = A_min * std::pow(A_min/P_min,d2_3)*s_sqrt/man;
     float q_max = A_max * std::pow(A_max/P_max,d2_3)*s_sqrt/man;
 
-
+    
     if(q_max < Q)
     {
         Q = q_max;
@@ -48,7 +47,7 @@ inline void SolveManningRectangular(float height,float s, float width, float man
         float A_middle = width * h_middle + A_start;
 
         float q_middle = A_middle * std::pow(A_middle/P_middle,d2_3)*s_sqrt/man;
-
+        
         if(std::fabs(q_middle - Q) < 1e-6)
         {
             Q= Q;
@@ -57,7 +56,7 @@ inline void SolveManningRectangular(float height,float s, float width, float man
 
             return;
         }
-
+        
         //based on which position the value lies, replace either the min or max estimate
         if(q_middle < Q)
         {
@@ -77,8 +76,8 @@ inline void SolveManningRectangular(float height,float s, float width, float man
         }
 
         iter ++;
-    }
-
+    } 
+    
     return;
 
 }
@@ -128,7 +127,7 @@ inline void SolveManningTrapezoid(float s_lat,float s, float width, float man, f
         float A_middle = (width * h_middle) + h_middle *w   +A_start;
 
         float q_middle = A_middle * std::pow(A_middle/P_middle,d2_3)*s_sqrt/man;
-
+        
         if(std::fabs(q_middle - Q) < 1e-6)
         {
             Q= Q;
@@ -137,7 +136,7 @@ inline void SolveManningTrapezoid(float s_lat,float s, float width, float man, f
 
             return;
         }
-
+        
         //based on which position the value lies, replace either the min or max estimate
         if(q_middle < Q)
         {
@@ -159,8 +158,8 @@ inline void SolveManningTrapezoid(float s_lat,float s, float width, float man, f
         }
 
         iter ++;
-    }
-
+    } 
+    
     return;
 }
 
@@ -213,7 +212,7 @@ inline void SolveManningTrapezoidOS(float s_lat,float s, float width, float widt
         float A_middle = (width_middle * h_middle) + h_middle *w * 0.5 * sides   +A_start;
 
         float q_middle = A_middle * std::pow(A_middle/P_middle,d2_3)*s_sqrt/man;
-
+        
         if(std::fabs(q_middle - Q) < 1e-6)
         {
             Q= Q;
@@ -222,7 +221,7 @@ inline void SolveManningTrapezoidOS(float s_lat,float s, float width, float widt
 
             return;
         }
-
+        
         //based on which position the value lies, replace either the min or max estimate
         if(q_middle < Q)
         {
@@ -244,8 +243,8 @@ inline void SolveManningTrapezoidOS(float s_lat,float s, float width, float widt
         }
 
         iter ++;
-    }
-
+    } 
+    
     return;
 }
 
@@ -281,7 +280,7 @@ inline cTMapf * GetFlowCrossSectionalVolumeFromRiverDischarge(cTMapf * DEM,cTMap
 
     float dx = std::fabs(DEM->cellSizeX());
 
-
+   
     for(int i = 0; i < iters; i++)
     {
         //we look 2^i pixels away for slope
@@ -399,7 +398,7 @@ inline cTMapf * GetFlowCrossSectionalVolumeFromRiverDischarge(cTMapf * DEM,cTMap
                     //did we already meet a volume larger then ours there?
 
                     //redistribute the volume and see if we have left-over
-
+                
 
                     sl = sl * 4.0/3.0;
                     sr = sr * 4.0/3.0;
@@ -413,7 +412,7 @@ inline cTMapf * GetFlowCrossSectionalVolumeFromRiverDischarge(cTMapf * DEM,cTMap
                             float QN = q->data[r][c];
                             float AN = 0.0;
                             float PN = 0.0;
-                            SolveManningRectangular(CHANH->data[r][c],std::max(0.001f,SLOPE->data[r][c]), CHANW->data[r][c], (N->data[r][c]*2.0), QN,AN,PN,10);
+                            SolveManningRectangular(CHANH->data[r][c],std::max(0.001f,SLOPE->data[r][c]), CHANW->data[r][c], (N->data[r][c]*MANNING_MULT_CSCPROF), QN,AN,PN,10);
 
                             q_estI->data[r][c] = std::min(q->data[r][c],QN);
                             A_estI->data[r][c] = AN;
@@ -425,8 +424,8 @@ inline cTMapf * GetFlowCrossSectionalVolumeFromRiverDischarge(cTMapf * DEM,cTMap
                     float QN = q->data[r][c];
                     float AN = 0.0;
                     float PN = 0.0;
-                    SolveManningTrapezoid(s,std::max(0.001f,SLOPE->data[r][c]), dxi, N->data[r][c]*2.0, QN,AN,PN,10);
-
+                    SolveManningTrapezoid(s,std::max(0.001f,SLOPE->data[r][c]), dxi, N->data[r][c]*MANNING_MULT_CSCPROF, QN,AN,PN,10);
+                    
                     if(q->data[r][c] > 100)
                     {
                         //FF::cout << "do_trapezoid " << i << " " << r << " " << c << "  : " <<q->data[r][c] << " " <<  QN << " " << SLOPE->data[r][c] << " " << N->data[r][c] << " " << s << " " << dx << " " << AN << " " << AN/dx << std::endl;
@@ -493,11 +492,11 @@ inline float middleOfThree(float a, float b, float c)
     // Checking for b
     if ((a < b && b < c) || (c < b && b < a))
        return b;
-
+ 
     // Checking for a
     else if ((b < a && a < c) || (c < a && a < b))
        return a;
-
+ 
     else
        return c;
 }
@@ -577,7 +576,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
     {
         WY2.push_back(DEM->GetCopy0());
     }
-
+   
     for(int i = 0; i < iters; i++)
     {
         //we look 2^i pixels away for slope
@@ -668,7 +667,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                         float zm_x = std::min(zmax_y,std::min(zmax_y1,zmax_y2));
 
                         DEM_MAXI[i]->data[r][c] = std::max(zm_y,zm_x);
-
+                    
                     }else
                     {
                         dem = DEMAVI[i-1]->data[r][c];
@@ -864,7 +863,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                         {
                             dxi_left_p = dx;
                         }
-                        int idist_left_p = idist_left_p;
+                        int idist_left_p = idist_left;
                         if(i_left>0)
                         {
                             idist_left_p = std::pow(3,i_left-1);
@@ -916,7 +915,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                                 float QN = q->data[r][c];
                                 float AN = 0.0;
                                 float PN = 0.0;
-                                SolveManningRectangular(CHANH->data[r][c],slope, CHANW->data[r][c], (N->data[r][c]*2.0), QN,AN,PN,10);
+                                SolveManningRectangular(CHANH->data[r][c],slope, CHANW->data[r][c], (N->data[r][c]*MANNING_MULT_CSCPROF), QN,AN,PN,10);
 
                                 q_estI->data[r][c] = std::min(q->data[r][c],QN);
                                 A_estI->data[r][c] = AN;
@@ -924,14 +923,14 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
 
                                 //add volume here
                                 VolI[0]->data[r][c] += AN/dx;
-
+                                
                             }
                         }
 
                         //we do a symmetrical trapezoid
                         sl = 0.5 * sl * 4.0/3.0;
                         sr = 0.5 * sr * 4.0/3.0;
-                        float s = std::max(1e-6, std::fabs(0.5*(sl + sr)));
+                        float s = std::max(1e-3, std::fabs(0.5*(sl + sr)));
 
                         bool left_is_blocking = false;
                         bool right_is_blocking = false;
@@ -946,7 +945,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                                 float AN = A_estI->data[r][c] + 2.0 * barrier_left * (dxi_left_p + dxi_right_p);
                                 float PN = P_estI->data[r][c] + 2.0 * barrier_left;
 
-                                float QN = AN * std::pow(AN/PN,2.0/3.0)*std::sqrt(slope)/(N->data[r][c]*2.0);
+                                float QN = AN * std::pow(AN/PN,2.0/3.0)*std::sqrt(slope)/(N->data[r][c]*MANNING_MULT_CSCPROF);
                                 if(QN > q->data[r][c])
                                 {
                                     left_is_blocking = true;
@@ -958,7 +957,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                                 float AN = A_estI->data[r][c] + 2.0 * barrier_right * (dxi_left_p + dxi_right_p);
                                 float PN = P_estI->data[r][c] + 2.0 * barrier_right;
 
-                                float QN = AN * std::pow(AN/PN,2.0/3.0)*std::sqrt(slope)/(N->data[r][c]*2.0f);
+                                float QN = AN * std::pow(AN/PN,2.0/3.0)*std::sqrt(slope)/(N->data[r][c]*MANNING_MULT_CSCPROF);
                                 if(QN > q->data[r][c])
                                 {
                                     right_is_blocking = true;
@@ -974,10 +973,10 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                             //solve rectangular channel
                             float QN = q->data[r][c];
                             float AN = A_estI->data[r][c];
-
+                            
                             float AN_O = AN;
                             float PN = P_estI->data[r][c];
-                            SolveManningRectangular(std::max(barrier_left, barrier_right),slope, dxi_left_p + dxi_right_p, N->data[r][c]*2.0f, QN,AN,PN,10);
+                            SolveManningRectangular(std::max(barrier_left, barrier_right),slope, dxi_left_p + dxi_right_p, N->data[r][c]*MANNING_MULT_CSCPROF, QN,AN,PN,10);
                             q_estI->data[r][c] = std::min(q->data[r][c],QN);
                             A_estI->data[r][c] = AN;
                             P_estI->data[r][c] = PN;
@@ -995,7 +994,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                             //float w_r = dxi_right_p /std::max(0.0001f,(dxi_left_p + dxi_right_p));
 
                             //we look 3^i pixels away for slope
-
+                            
                             //left x weight
                             //left x offset
                             if((c + (WX1[i_left_p]->data[r][c]>0.0?1:-1) * idist_left_p > -1) && (c + (WX1[i_left_p]->data[r][c]>0.0?1:-1) * idist_left_p < DEM->nrCols()))
@@ -1034,7 +1033,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                             do_left = false;
                         }
 
-                        //run one-sided trapezoid
+                        //run one-sided trapezoid 
                         if(i_left == 0 && i_right == 0)
                         {
 
@@ -1042,7 +1041,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                             float AN = A_estI->data[r][c];
                             float AO = AN;
                             float PN = P_estI->data[r][c];
-                            SolveManningTrapezoid(s,slope, dxi_left,N->data[r][c]*2.0f, QN,AN,PN,10);
+                            SolveManningTrapezoid(s,slope, dxi_left,N->data[r][c]*MANNING_MULT_CSCPROF, QN,AN,PN,10);
                             q_estI->data[r][c] = std::min(q->data[r][c],QN);
                             A_estI->data[r][c] = AN;
                             P_estI->data[r][c] = PN;
@@ -1051,11 +1050,11 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                             i_right = i_right + 1;
                             h_left += s * dxi_left;
                             h_right += s * dxi_left;
-                            dx_middle += 2.0 * dx;
-
+                            dx_middle += 2.0 * dx;                           
+                        
                             float vol = (AN-AO)/(3.0*dx);
                             //add volume to cascades
-                            //get all weights
+                            //get all weights 
 
                             //normalize to 1
 
@@ -1082,24 +1081,24 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
 
                         }else
                         {
-
+                           
                            if(do_left)
                            {
                                 float QN = q->data[r][c];
                                 float AN = A_estI->data[r][c];
                                 float AO = AN;
                                 float PN = P_estI->data[r][c];
-                                SolveManningTrapezoidOS(sl,slope, dxi_left, dx_middle,  N->data[r][c]*2.0f, QN,AN,PN,10,1.0);
+                                SolveManningTrapezoidOS(sl,slope, dxi_left, dx_middle,  N->data[r][c]*MANNING_MULT_CSCPROF, QN,AN,PN,10,1.0);
                                 q_estI->data[r][c] = std::min(q->data[r][c],QN);
                                 A_estI->data[r][c] = AN;
                                 P_estI->data[r][c] = PN;
 
                                 h_left += s * dxi_left;
                                 h_right += s * dxi_left;
-
+                        
                                 float vol = (AN-AO)/(dxi_right_p + dxi_left);
-
-                                dx_middle += dxi_left;
+                                
+                                dx_middle += dxi_left;   
 
                                 if((c + (WX1[i_left]->data[r][c]>0.0?1:-1) * idist_left > -1) && (c + (WX1[i_left]->data[r][c]>0.0?1:-1) * idist_left < DEM->nrCols()))
                                 {
@@ -1121,33 +1120,33 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                                     //VolI[i_right_p]->data[r][c] += (dx/dxi_right_p) *vol * std::fabs(WY2[i_right_p]->data[r][c]);
                                 }
 
-
-                                i_left = i_left + 1;
+                                
+                                i_left = i_left + 1;    
 
                            }else{
                                 float QN = q->data[r][c];
                                 float AN = A_estI->data[r][c];
                                 float AO = AN;
                                 float PN = P_estI->data[r][c];
-                                SolveManningTrapezoidOS(sr,slope, dxi_right, dx_middle,  N->data[r][c]*2.0f, QN,AN,PN,10,1.0);
+                                SolveManningTrapezoidOS(sr,slope, dxi_right, dx_middle,  N->data[r][c]*MANNING_MULT_CSCPROF, QN,AN,PN,10,1.0);
                                 q_estI->data[r][c] = std::min(q->data[r][c],QN);
                                 A_estI->data[r][c] = AN;
                                 P_estI->data[r][c] = PN;
 
 
-                                h_left += s * dxi_right;
-                                h_right += s * dxi_right;
-
+                                h_left += s * dxi_right;    
+                                h_right += s * dxi_right;                   
+                        
                                 float vol = (AN-AO)/(dxi_left_p + dxi_right);
-
-                                dx_middle += dxi_right;
+                                
+                                dx_middle += dxi_right;   
 
                                 if((c + (WX1[i_left_p]->data[r][c]>0.0?1:-1) * idist_left > -1) && (c + (WX1[i_left_p]->data[r][c]>0.0?1:-1) * idist_left < DEM->nrCols()))
                                 {
                                     //VolI[i_left_p]->data[r][c + (WX1[i_left_p]->data[r][c]>0.0?1:-1) * idist_left] += (dx/dxi_left_p) * vol * std::fabs(WX1[i_left_p]->data[r][c]);
 
                                     //VolI[i_left_p]->data[r][c] += (dx/dxi_left_p) * vol * std::fabs(WX1[i_left_p]->data[r][c]);
-
+                                    
 
                                 }
                                 if((c + (WX2[i_right]->data[r][c]>0.0?1:-1) * idist_right > -1) && (c +  (WX2[i_right]->data[r][c]>0.0?1:-1) * idist_right < DEM->nrCols()))
@@ -1160,7 +1159,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                                     //VolI[i_left_p]->data[r + (WY1[i_left_p]->data[r][c]>0.0?1:-1) * idist_left][c] += (dx/dxi_left_p) *vol * std::fabs(WY1[i_left_p]->data[r][c]);
 
                                     //VolI[i_left_p]->data[r][c] += (dx/dxi_left_p) *vol * std::fabs(WY1[i_left_p]->data[r][c]);
-
+                                    
                                 }
                                 if((r + (WY2[i_right]->data[r][c]>0.0?1:-1) * idist_right > -1) && (r +  (WY2[i_right]->data[r][c]>0.0?1:-1) * idist_right < DEM->nrRows()))
                                 {
@@ -1168,7 +1167,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                                 }
 
 
-                                i_right = i_right + 1;
+                                i_right = i_right + 1;     
 
                            }
 
@@ -1178,7 +1177,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
             }
         }
 
-    //now iterate backwards to re-distribute the water
+    //now iterate backwards to re-distribute the water 
     for(int i = iters-1; i > 0; i--)
     {
         int idist = 1;
@@ -1231,7 +1230,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                         {
                             VolI[i-1]->data[r-idist][c-idist] += vol;
                         }
-                        if(c-idist > -1 && c-idist < DEM->Cols() && r+idist > -1 && r+idist < DEM->Rows())
+                        if(c-idist > -1 && c-idist < DEM->Cols() && r+idist > -1 && r+idist < DEM->Rows()) 
                         {
                             VolI[i-1]->data[r+idist][c-idist] += vol;
                         }
@@ -1282,7 +1281,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
     {
         delete WY2[i];
     }
-
+    
 
     for(int i = 1; i < iters; i++)
     {
@@ -1292,7 +1291,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
     delete q_estI;
     delete P_estI;
 
-
+    
     delete WidthI;
 
 
@@ -1309,7 +1308,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
     cTMapf * q_estI = q->GetCopy0();
     cTMapf * A_estI = q->GetCopy0();
     cTMapf * P_estI = q->GetCopy0();
-
+    
     float dx = std::fabs(DEM->cellSizeX());
 
     std::vector<cTMapf *> DEM_MAXI;
@@ -1358,7 +1357,6 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
         }
     }
 
-
     FF::cout << "do dem prepare " << std::endl;
     for(int i = 0; i < iters; i++)
     {
@@ -1390,7 +1388,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
             for(int c = 0; c < mask->Cols(); c++)
             {
                 //first get the DEM values
-
+                
                 {
                     cTMapf * DEMAVIP;
                     cTMapf * DEMMAXIP;
@@ -1431,7 +1429,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                     }
                     if(!pcr::isMV(z))
                     {
-
+                        
 
                         float zx1 = z;
                         float zx2 = z;
@@ -1580,7 +1578,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                         float zmax_x1 = std::max(zmx1,std::max(zmx1y1,zmx1y2));
                         float zmax_x2 = std::max(zmx2,std::max(zmx2y1,zmx2y2));
                         float zmax_y1 = std::max(zmy1,std::max(zmx1y1,zmx2y1));
-                        float zmax_y2 = std::max(zmy2,std::max(zmx1y2,zmx1y2));
+                        float zmax_y2 = std::max(zmy2,std::max(zmx1y2,zmx2y2));
 
                         float sx1 =(zx1 -z)/dxi;
                         float sy1 =(zy1 -z)/dxi;
@@ -1630,8 +1628,79 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
         }
     }
 
-    FF::cout << "do actual distribution " << std::endl;
+    SLOPE = SLOPE->GetCopy0();
+    #pragma omp parallel for collapse(2)
+    for (int r = 0; r < DEM->Rows(); r++) {
+        for(int c = 0; c < DEM->Cols(); c++) {
 
+            if (!pcr::isMV(DEM->data[r][c])) {
+                //use min(iters-1,3);
+                int i_target =3;
+                if (dx > 50) {
+                    i_target = 2;
+                }if (dx > 100) {
+                    i_target = 1;
+                }if (dx > 200) {
+                    i_target = 0;
+                }
+
+                int i_left = std::min(iters-1,i_target);
+
+                //get coordinates
+
+                int r_il = std::max(0,std::min(DEMAVI[i_left]->Rows()-1,(int)(r/(i_left == 0? 1: std::pow(3,std::max(0,i_left))))));
+                int c_il = std::max(0,std::min(DEMAVI[i_left]->Cols()-1,(int)(c/(i_left == 0? 1: std::pow(3,std::max(0,i_left))))));
+
+                float z= DEMAVI[i_left]->data[r_il][c_il];
+                if (pcr::isMV(z)) {
+                    z = DEM->data[r][c];
+                }
+
+                float z_x1 = z;
+                float z_x2 = z;
+                float z_y1 = z;
+                float z_y2 = z;
+
+                if (r_il > 0) {
+                    if (!pcr::isMV(DEMAVI[i_left]->data[r_il-1][c_il])) {
+                        z_y1 = DEMAVI[i_left]->data[r_il-1][c_il];
+                    }
+                }
+                if (c_il > 0) {
+                    if (!pcr::isMV(DEMAVI[i_left]->data[r_il][c_il-1])) {
+                        z_x1 = DEMAVI[i_left]->data[r_il][c_il-1];
+                    }
+                }
+                if (r_il < DEMAVI[i_left]->Rows() -1) {
+                    if (!pcr::isMV(DEMAVI[i_left]->data[r_il+1][c_il])) {
+                        z_y2 = DEMAVI[i_left]->data[r_il+1][c_il];
+                    }
+                }
+                if (c_il > DEMAVI[i_left]->Cols() - 1) {
+                    if (!pcr::isMV(DEMAVI[i_left]->data[r_il][c_il+1])) {
+                        z_x2 = DEMAVI[i_left]->data[r_il][c_il+1];
+                    }
+                }
+                std::array<float, 4> values = {z_x1, z_x2, z_y1, z_y2};
+                // 2. Sort the array in ascending order
+                std::sort(values.begin(), values.end());
+                float smallest = values[0];
+                float second_smallest = values[1];
+                float dxi = dx;
+                if(i_left > 0)
+                {
+                    dxi =dx * ((float)(std::pow(3,i_left-1)));
+                }else
+                {
+                    dxi = dx;
+                }
+                SLOPE->data[r][c] = std::max(1e-2f,std::fabs(smallest - second_smallest)/(2.0f*dxi));
+            }
+
+        }
+    }
+    FF::cout << "do actual distribution " << std::endl;
+        
         #pragma omp parallel for collapse(2)
         for (int r = 0; r < DEM->Rows(); r++)
         {
@@ -1660,7 +1729,6 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                         {
                             break;
                         }
-
 
                         //we look 3^i pixels away for slope
                         float dxi_left = dx;
@@ -1692,7 +1760,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                         {
                             dxi_left_p = dx;
                         }
-                        int idist_left_p = idist_left_p;
+                        int idist_left_p = idist_left;
                         if(i_left>0)
                         {
                             idist_left_p = std::pow(3,i_left-1);
@@ -1707,7 +1775,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                         }else{
                             dxi_right_p = dx;
                         }
-                        int idist_right_p = idist_right_p;
+                        int idist_right_p = idist_right;
                         if(i_right>0)
                         {
                             idist_right_p = std::pow(3,i_right-1);
@@ -1722,12 +1790,12 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                            if(FlowWR != nullptr)
                         {
                             FlowWR->data[r][c] = std::max(dx,dxi_right);
-                        }
+                        }                 
 
 
                         int i_left_p = std::max(0,i_left-1);
                         int i_right_p = std::max(0,i_right-1);
-
+                        
                         int r_il = std::max(0,std::min(DEMAVI[i_left]->Rows()-1,(int)(r/(i_left == 0? 1: std::pow(3,std::max(0,i_left))))));
                         int c_il = std::max(0,std::min(DEMAVI[i_left]->Cols()-1,(int)(c/(i_left == 0? 1: std::pow(3,std::max(0,i_left))))));
                         int r_ir = std::max(0,std::min(DEMAVI[i_right]->Rows()-1,(int)(r/(i_right == 0? 1: std::pow(3,std::max(0,i_right))))));
@@ -1736,7 +1804,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                         int c_ilp = std::max(0,std::min(DEMAVI[i_left_p]->Cols()-1,(int)(c/(i_left < 2? 1: std::pow(3,std::max(0,i_left-1))))));
                         int r_irp = std::max(0,std::min(DEMAVI[i_right_p]->Rows()-1,(int)(r/(i_right < 2? 1: std::pow(3,std::max(0,i_right-1))))));
                         int c_irp = std::max(0,std::min(DEMAVI[i_right_p]->Cols()-1,(int)(c/(i_right < 2? 1: std::pow(3,std::max(0,i_right-1))))));
-
+                        
                         //get current left and right slope, and current left and right barrier height, if any
                         float sl= SL[i_left]->data[r_il][c_il];
                         float sr= SR[i_right]->data[r_ir][c_ir];
@@ -1749,18 +1817,23 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                             sr = 0.001f;
                         }
 
-                        float zml = std::max(DEM_MAXL[i_left]->data[std::max(0,std::min(WY1[i_left]->Rows()-1,r_il + (WY1[i_left]->data[r_il][c_il]>0.0?1:-1)))][c_il],std::max(DEM_MAXL[i_left]->data[r_il][std::max(0,std::min(WY1[i_left]->Cols()-1,c_il + (WX1[i_left]->data[r_il][c_il]>0.0?1:-1)))],DEM_MAXL[i_left]->data[r_il][c_il]));
+                        float zml = std::max(
+                            DEM_MAXL[i_left]->data[std::max(0,std::min(WY1[i_left]->Rows()-1,r_il + (WY1[i_left]->data[r_il][c_il]>0.0?1:-1)))][c_il]
+                            ,std::max(
+                                DEM_MAXL[i_left]->data[r_il][std::max(0,std::min(WY1[i_left]->Cols()-1,c_il + (WX1[i_left]->data[r_il][c_il]>0.0?1:-1)))]
+                                ,DEM_MAXL[i_left]->data[r_il][c_il])
+                                );
                         float zmr = std::max(
                                     DEM_MAXR[i_right]->data[std::max(0,std::min(WY1[i_right]->Rows()-1,r_ir + (WY2[i_right]->data[r_ir][c_ir]>0.0?1:-1)))][c_ir]
                                 ,std::max(
-                                    DEM_MAXR[i_right]->data[r_ir][std::max(0,std::min(WY2[i_right]->Cols()-1,c_ir + (WX1[i_right]->data[r_ir][c_ir]>0.0?1:-1)))]
+                                    DEM_MAXR[i_right]->data[r_ir][std::max(0,std::min(WX2[i_right]->Cols()-1,c_ir + (WX2[i_right]->data[r_ir][c_ir]>0.0?1:-1)))]
                                 ,DEM_MAXR[i_right]->data[r_ir][c_ir])
                                 );
                         if(pcr::isMV(zml))
                         {
                             zml = dem+ 0.001f;
                         }
-                        if(pcr::isMV(sr))
+                        if(pcr::isMV(zmr))
                         {
                             zmr = dem + 0.001f;
                         }
@@ -1785,7 +1858,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                                 float QN = q->data[r][c];
                                 float AN = 0.0;
                                 float PN = 0.0;
-                                SolveManningRectangular(CHANH->data[r][c],slope, CHANW->data[r][c], N->data[r][c]*2.0, QN,AN,PN,FF_QH_ITERS);
+                                SolveManningRectangular(CHANH->data[r][c],slope, CHANW->data[r][c], N->data[r][c]*MANNING_MULT_CSCPROF, QN,AN,PN,FF_QH_ITERS);
 
                                 q_estI->data[r][c] = std::min(q->data[r][c],QN);
                                 A_estI->data[r][c] = AN;
@@ -1793,14 +1866,20 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
 
                                 //add volume here
                                 VolI[0]->data[r][c] += AN/dx;
-
+                                
+                            }
+                            
+                            if((std::fabs(q_estI->data[r][c] - q->data[r][c]) < 1e-4))
+                            {
+                                break;
                             }
                         }
+
 
                         //we do a symmetrical trapezoid
                         sl = 0.5 * sl * 4.0/3.0;
                         sr = 0.5 * sr * 4.0/3.0;
-                        float s = std::max(1e-6, std::fabs(0.5*(sl + sr)));
+                        float s = std::max(1e-3, std::fabs(0.5*(sl + sr)));
 
                         bool left_is_blocking = false;
                         bool right_is_blocking = false;
@@ -1815,7 +1894,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                                 float AN = A_estI->data[r][c] + 2.0 * barrier_left * (dxi_left_p + dxi_right_p);
                                 float PN = P_estI->data[r][c] + 2.0 * barrier_left;
 
-                                float QN = AN * std::pow(AN/PN,2.0/3.0)*std::sqrt(slope)/(N->data[r][c]*2.0);
+                                float QN = AN * std::pow(AN/PN,2.0/3.0)*std::sqrt(slope)/(N->data[r][c]*MANNING_MULT_CSCPROF);
                                 if(QN > q->data[r][c])
                                 {
                                     left_is_blocking = true;
@@ -1827,7 +1906,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                                 float AN = A_estI->data[r][c] + 2.0 * barrier_right * (dxi_left_p + dxi_right_p);
                                 float PN = P_estI->data[r][c] + 2.0 * barrier_right;
 
-                                float QN = AN * std::pow(AN/PN,2.0/3.0)*std::sqrt(slope)/(N->data[r][c]*2.0);
+                                float QN = AN * std::pow(AN/PN,2.0/3.0)*std::sqrt(slope)/(N->data[r][c]*MANNING_MULT_CSCPROF);
                                 if(QN > q->data[r][c])
                                 {
                                     right_is_blocking = true;
@@ -1845,10 +1924,10 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                             //solve rectangular channel
                             float QN = q->data[r][c];
                             float AN = A_estI->data[r][c];
-
+                            
                             float AN_O = AN;
                             float PN = P_estI->data[r][c];
-                            SolveManningRectangular(std::max(barrier_left, barrier_right),slope, dxi_left_p + dxi_right_p, N->data[r][c]*2.0f, QN,AN,PN,FF_QH_ITERS);
+                            SolveManningRectangular(std::max(barrier_left, barrier_right),slope, dxi_left_p + dxi_right_p, N->data[r][c]*MANNING_MULT_CSCPROF, QN,AN,PN,FF_QH_ITERS);
                             q_estI->data[r][c] = std::min(q->data[r][c],QN);
                             A_estI->data[r][c] = AN;
                             P_estI->data[r][c] = PN;
@@ -1875,10 +1954,10 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                             //float w_r = dxi_right_p /std::max(0.0001f,(dxi_left_p + dxi_right_p));
 
                             //we look 3^i pixels away for slope
-
+                            
                             //left x weight
                             //left x offset
-
+                            
                             if((c_ilp + (WX1[i_left_p]->data[r_ilp][c_ilp]>0.0?1:-1) > -1) && (c_ilp + (WX1[i_left_p]->data[r_ilp][c_ilp]>0.0?1:-1)  < DEMAVI[i_left_p]->nrCols()))
                             {
                                 VolI[i_left_p]->data[r_ilp][c_ilp + (WX1[i_left_p]->data[r_ilp][c_ilp]>0.0?1:-1)] += (dx/dxi_left_p) *vol * std::fabs(WX1[i_left_p]->data[r_ilp][c_ilp]);
@@ -1905,7 +1984,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
 
                             float AN_O = AN;
                             float PN = P_estI->data[r][c];
-                            SolveManningRectangular(std::min(barrier_left, barrier_right),slope, dxi_left_p + dxi_right_p, N->data[r][c]*2.0f, QN,AN,PN,FF_QH_ITERS);
+                            SolveManningRectangular(std::min(barrier_left, barrier_right),slope, dxi_left_p + dxi_right_p, N->data[r][c]*MANNING_MULT_CSCPROF, QN,AN,PN,FF_QH_ITERS);
                             q_estI->data[r][c] = std::min(q->data[r][c],QN);
                             A_estI->data[r][c] = AN;
                             P_estI->data[r][c] = PN;
@@ -1964,7 +2043,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                             do_left = false;
                         }
 
-                        //run one-sided trapezoid
+                        //run one-sided trapezoid 
                         if(i_left == 0 && i_right == 0)
                         {
 
@@ -1972,7 +2051,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                             float AN = A_estI->data[r][c];
                             float AO = AN;
                             float PN = P_estI->data[r][c];
-                            SolveManningTrapezoid(s,slope, dxi_left,N->data[r][c]*2.0f, QN,AN,PN,FF_QH_ITERS);
+                            SolveManningTrapezoid(s,slope, dxi_left,N->data[r][c]*MANNING_MULT_CSCPROF, QN,AN,PN,FF_QH_ITERS);
                             q_estI->data[r][c] = std::min(q->data[r][c],QN);
                             A_estI->data[r][c] = AN;
                             P_estI->data[r][c] = PN;
@@ -1982,8 +2061,8 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                             i_right = i_right + 1;
                             h_left += s * dxi_left;
                             h_right += s * dxi_right;
-                            dx_middle += 2.0 * dx;
-
+                            dx_middle += 2.0 * dx;                           
+                        
                             float vol = (AN-AO)/(dxi_left + dxi_right);
 
                             if(r == 261 && c== 105)
@@ -1998,35 +2077,35 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                                 //FF::cout << "middle " << r << " " << c << " " << q->data[r][c] << " " << slope << " " << s << " "<< dxi_left<< " " << N->data[r][c]<< " " << vol << " " << AN << " " << AO << " " << dx <<  std::endl;
                                 //FF::cout << r_il << " " << c_il << " " << r_ir << " " << c_ir << std::endl;
                             }
-
+                
                             if((c + (WX1[0]->data[r][c]>0.0?1:-1) > -1) && (c + (WX1[0]->data[r][c]>0.0?1:-1)  < DEMAVI[0]->nrCols()))
                             {
-                                VolI[0]->data[r][c] += (dx/dxi_left) *vol * std::fabs(WX1[0]->data[r][c]);
+                                VolI[0]->data[r][c] += (dx/dxi_left) *vol * 0.5*  std::fabs(WX1[0]->data[r][c]);
                             }
                             if((c + (WX2[0]->data[r][c]>0.0?1:-1) > -1) && (c +  (WX2[0]->data[r][c]>0.0?1:-1) < DEMAVI[0]->nrCols()))
                             {
-                                VolI[0]->data[r][c ] += (dx/dxi_right) *vol * std::fabs(WX2[0]->data[r][c]);
+                                VolI[0]->data[r][c ] += (dx/dxi_right) *vol *0.5*  std::fabs(WX2[0]->data[r][c]);
                             }
                             if((r + (WY1[0]->data[r][c]>0.0?1:-1) > -1) && (r + (WY1[0]->data[r][c]>0.0?1:-1) < DEMAVI[0]->nrRows()))
                             {
-                                VolI[0]->data[r ][c] += (dx/dxi_left) *vol * std::fabs(WY1[0]->data[r][c]);
+                                VolI[0]->data[r ][c] += (dx/dxi_left) *vol *0.5*  std::fabs(WY1[0]->data[r][c]);
                             }
                             if((r + (WY2[0]->data[r][c]>0.0?1:-1) > -1) && (r +  (WY2[0]->data[r][c]>0.0?1:-1) < DEMAVI[0]->nrRows()))
                             {
-                                VolI[0]->data[r ][c] += (dx/dxi_right) *vol * std::fabs(WY2[0]->data[r][c]);
+                                VolI[0]->data[r ][c] += (dx/dxi_right) *vol *0.5*  std::fabs(WY2[0]->data[r][c]);
                             }
 
 
                         }else
                         {
-
+                           
                            if(do_left)
                            {
                                 float QN = q->data[r][c];
                                 float AN = A_estI->data[r][c];
                                 float AO = AN;
                                 float PN = P_estI->data[r][c];
-                                SolveManningTrapezoidOS(sl,slope, dxi_left, dx_middle,  N->data[r][c]*2.0f, QN,AN,PN,FF_QH_ITERS,1.0);
+                                SolveManningTrapezoidOS(sl,slope, dxi_left, dx_middle,  N->data[r][c]*MANNING_MULT_CSCPROF, QN,AN,PN,FF_QH_ITERS,1.0);
                                 q_estI->data[r][c] = std::min(q->data[r][c],QN);
                                 A_estI->data[r][c] = AN;
                                 P_estI->data[r][c] = PN;
@@ -2035,14 +2114,14 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
 
                                 h_left += s * dxi_left;
                                 h_right += s * dxi_left;
-
+                        
                                 float vol = (AN-AO)/(dxi_right_p + dxi_left);
                                 if(r == 261 && c== 105)
                                 {
                                     //std::cout << "sus pixell " << AN <<  " " << test->data[r][c]<<" " << q_estI->data[r][c] <<  " " << vol << std::endl;
 
                                 }
-                                dx_middle += dxi_left;
+                                dx_middle += dxi_left;   
 
                                 if(q->data[r][c] >25.0)
                                 {
@@ -2068,22 +2147,22 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                                     VolI[i_right_p]->data[r_irp + (WY2[i_right_p]->data[r_irp][c_irp]>0.0?1:-1)][c_irp] += (dx/dxi_right_p) *vol * std::fabs(WY2[i_right_p]->data[r_irp][c_irp]);
                                 }
 
-                                i_left = i_left + 1;
+                                i_left = i_left + 1;    
 
                            }else{
                                 float QN = q->data[r][c];
                                 float AN = A_estI->data[r][c];
                                 float AO = AN;
                                 float PN = P_estI->data[r][c];
-                                SolveManningTrapezoidOS(sr,slope, dxi_right, dx_middle,  (N->data[r][c]*2.0f), QN,AN,PN,FF_QH_ITERS,1.0);
+                                SolveManningTrapezoidOS(sr,slope, dxi_right, dx_middle,  (N->data[r][c]*MANNING_MULT_CSCPROF), QN,AN,PN,FF_QH_ITERS,1.0);
                                 q_estI->data[r][c] = std::min(q->data[r][c],QN);
                                 A_estI->data[r][c] = AN;
                                 P_estI->data[r][c] = PN;
 
                                 test->data[r][c] += AN;
-                                h_left += s * dxi_right;
-                                h_right += s * dxi_right;
-
+                                h_left += s * dxi_right;    
+                                h_right += s * dxi_right;                   
+                        
                                 float vol = (AN-AO)/(dxi_left_p+dxi_right);
 
                                 if(r == 261 && c== 105)
@@ -2091,14 +2170,14 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                                     //std::cout << "sus pixelr " << AN <<  " " << test->data[r][c]<<" " << q_estI->data[r][c] <<  " " << vol << std::endl;
 
                                 }
-                                dx_middle += dxi_right;
+                                dx_middle += dxi_right; 
 
                                 if(q->data[r][c] >25.0)
                                 {
                                     //FF::cout << "middle " << r << " " << c << " " << q->data[r][c] << " " << slope << " " << s << " "<< dxi_left<< " " << N->data[r][c]<< " " << vol << " " << AN << " " << AO << " " << dx <<  std::endl;
                                     //FF::cout << "right "<< i_left << " " << i_right << " " << i_left_p << " " << i_right_p <<  std::endl;
                                     //FF::cout << r_il << " " << c_il << " " << r_ir << " " << c_ir << " " << r_ilp << " " << c_ilp << std::endl;
-                                }
+                                }  
 
                                 if((c_ilp + (WX1[i_left_p]->data[r_ilp][c_ilp]>0.0?1:-1) > -1) && (c_ilp + (WX1[i_left_p]->data[r_ilp][c_ilp]>0.0?1:-1)  < DEMAVI[i_left_p]->nrCols()))
                                 {
@@ -2117,7 +2196,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                                     VolI[i_right]->data[r_ir + (WY2[i_right]->data[r_ir][c_ir]>0.0?1:-1)][c_ir] += (dx/dxi_right) *vol * std::fabs(WY2[i_right]->data[r_ir][c_ir]);
                                 }
 
-                                i_right = i_right + 1;
+                                i_right = i_right + 1;     
                            }
                         }
                     }
@@ -2145,7 +2224,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
     FF::cout << "do dem prepare " << std::endl;
     for(int i = 1; i < iters; i++)
     {
-
+        
         FF::cout << "add wh av to dem av " << i << std::endl;
 
         cTMapf * mask = DEM_MAXI[i];
@@ -2185,7 +2264,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                     {
                         z = DEMAVIP->data[r_ip][c_ip];
                     }
-
+                    
                     if(!pcr::isMV(z))
                     {
                         float zx1 = z;
@@ -2274,7 +2353,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                     if(!pcr::isMV(DEMAVI[i]->data[r][c]))
                     {
                         DEMAVI[i]->data[r][c] = DEMAVI[i]->data[r][c] + WX1[i]->data[r][c];
-
+            
                     }
 
                 }
@@ -2293,7 +2372,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                 }
             }
         }
-
+                
     }
 
     /*for (int r0 = 0; r0 < DEMAVI[0]->Rows(); r0++)
@@ -2311,9 +2390,9 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
 
     //number of iterations to use for each layer of the cascading structure
 
-
+    
     std::vector<int> iters_p = {(int)(quality_p * 15.0),(int)(quality_p *30.0),(int)(quality_p *30),(int)(quality_p*30),(int)(quality_p * 15),(int)(quality_p*15),(int)(quality_p * 5),6,6,6,6};
-    //now iterate backwards to re-distribute the water
+    //now iterate backwards to re-distribute the water 
     for(int i = iters-1; i > 0; i--)
     {
         if(i < iters -1)
@@ -2365,7 +2444,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                         {
                             VolI[i-1]->data[r+1][c] += vol;
                         }
-                        if((c+1 > -1) && (c+1 < DEMAVI[i-1]->Cols()) && (r > -1) && (r < DEMAVI[i-1]->Rows()))
+                        if((c+1 > -1) && (c+1 < DEMAVI[i-1]->Cols()) && (r > -1) && (r < DEMAVI[i-1]->Rows())) 
                         {
                             VolI[i-1]->data[r][c+1] += vol;
                         }
@@ -2385,7 +2464,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
                         {
                             VolI[i-1]->data[r-1][c-1] += vol;
                         }
-                        if((c-1 > -1) && (c-1 < DEMAVI[i-1]->Cols()) && (r+1 > -1) && (r+1 < DEMAVI[i-1]->Rows()))
+                        if((c-1 > -1) && (c-1 < DEMAVI[i-1]->Cols()) && (r+1 > -1) && (r+1 < DEMAVI[i-1]->Rows())) 
                         {
                             VolI[i-1]->data[r+1][c-1] += vol;
                         }
@@ -2428,7 +2507,7 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
         delete DEMAVI[i];
     }
     FF::cout << "del1 " << std::endl;
-
+    
     for(int i = 0; i < iters; i++)
     {
         FF::cout << " i " << i << WX1[i] << std::endl;
@@ -2455,6 +2534,8 @@ inline std::vector<cTMapf *> GetFlowCrossSectionalVolumeFromRiverDischargePreDis
     delete q_estI;
     delete P_estI;
     delete A_estI;
+    delete SLOPE;
+    //we replaced slope with a temporary copy, so we own that memory and should delete it.
 
     return VolI;
 
